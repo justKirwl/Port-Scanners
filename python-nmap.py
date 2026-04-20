@@ -25,5 +25,3 @@ def scan_ports(ports: Iterable[int] = [], host: str = 'localhost', colored_outpu
             for port in lport:
                 state = nm[host][proto][port]['state']
                 print(f'port : {GREEN}{port}{RESET}  state: {BLACK_ON_BLUE}{state}{RESET}')
-
-scan_ports()
