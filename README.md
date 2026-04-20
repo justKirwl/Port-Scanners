@@ -1,39 +1,48 @@
 # Python Port Scanner Suite
 
-A collection of three different port scanner implementations in Python. This project demonstrates various networking approaches, ranging from low-level socket programming to high-level asynchronous I/O and integration with industry-standard tools.
+A powerful collection of port scanning implementations in Python. This suite allows you to choose between a raw socket-based approach (using Asyncio or Threads) and a professional-grade scanner powered by the `nmap` library.
 
 ## 🚀 Features
 
-The suite includes three distinct scanning methods:
-
-1.  **Nmap-Based**: Leveraging the power of `python-nmap` for robust and detailed network analysis.
-2.  **Multithreaded (ThreadPool)**: High-speed scanning using `concurrent.futures` to manage multiple socket connections simultaneously.
-3.  **Asynchronous (Asyncio)**: A modern, non-blocking approach using `asyncio` and `Semaphores` for efficient resource management.
+- **Multiple Modes**: Choose between `Nmap-library`, `Asyncio`, or `Multithreaded` engines.
+- **Advanced CLI**: Fully controlled via command-line arguments.
+- **Flexible Port Selection**: Supports single ports, comma-separated lists, and ranges (e.g., `80,443,1000-2000`).
+- **Beautiful UI**: Results are displayed in clean, formatted tables using `tabulate`.
+- **Colored Output**: Visual status indicators for better readability.
 
 ## 🛠 Prerequisites
 
 ### System Requirements
-To use the **Nmap version**, you must have Nmap installed on your system:
+To use the **Library (Nmap) version**, you must have Nmap installed:
 - **Linux**: `sudo apt install nmap`
 - **macOS**: `brew install nmap`
-- **Windows**: Download from [nmap.org](https://nmap.org)
+- **Windows**: [nmap.org/download.html](https://nmap.org)
 
 ### Python Dependencies
-Install the required libraries via pip:
 ```bash
 pip install python-nmap tabulate
 ```
+📖 Usage
+1. Library Version (Recommended)
+The nmap_scanner.py uses the official Nmap engine. It is faster, more accurate, and provides more reliable state detection than raw socket scripts.
+bash
+python nmap_scanner.py --host scanme.nmap.org --ports 22,80,443
+2. Raw Versions (Async/Threads)
+For lightweight scanning without external dependencies (except tabulate):
+bash
+# Using Asyncio (default)
+python scanner.py --host 192.168.1.1 --ports 1-1024 --mode async
 
-📊 Comparison of Methods
-Method	Best For	Technology
-Nmap	Accuracy & OS Detection	nmap binary wrapper
-Threads	Stability & Simplicity	ThreadPoolExecutor
-Asyncio	Scalability & Performance	asyncio + Sockets
-
-🎨 UI & Presentation
-All scanners feature:
-Colored Output: Highlighting open ports for better readability.
-Tabular Data: Results are neatly organized using the tabulate library with rounded grid styles.
+# Using Threads
+python scanner.py --host 127.0.0.1 --ports 80,443,8080 --mode thread
+⚙️ Arguments
+Argument	Description	Example
+--host	Target IP or domain	--host google.com
+--ports	Ports, lists, or ranges	--ports 80,443,1-100
+--mode	Engine (for raw version)	--mode async or thread
+💡 Which one to use?
+Use the Nmap Library version for professional network auditing. It handles complex network conditions and provides the most precise results.
+Use Raw versions for learning purposes or when you need a quick, standalone script without installing the Nmap binary.
 
 ⚠️ Disclaimer
 This tool is for educational and ethical testing purposes only. Scanning targets without prior authorization is illegal and unethical. Use it responsibly on your own hardware or authorized environments (like scanme.nmap.org).
