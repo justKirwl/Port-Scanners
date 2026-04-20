@@ -4,7 +4,7 @@ import socket
 import asyncio
 import tabulate
 
-from typing import Iterable
+import argparse
 
 GREEN = '\033[92m'
 BLUE = '\033[94m'
@@ -24,13 +24,20 @@ def check_port(args: tuple[str, int]) -> tuple[int, bool] | list[str]:
         with socket.create_connection((host, port), timeout=2):
             return [f'{PURPLE}{get_service_name(port)}{RESET}', f"{GREEN}{port}{RESET}", f"{BLUE}open{RESET}"]
     except (ConnectionRefusedError, socket.timeout, OSError):
-        return port, False
-
-def scan_ports(ports: Iterable[int] = [], host: str = 'localhost') -> None:
+        return None
+    
+def parse_ports(ports_str: str) -> list[int]:
+    result = []
+    for part in ports_str.split(','):
+        if '-' in part:
+            start, end = map(int, part.split('-'))
+            result.extend(range(start, end + 1))
+        else:
+            result.append(int(part))
+    return sorted(list(set(result)))
+    
+def run_threaded_scan(host: str, ports: list[int]) -> None:
     try:
-        if not ports:
-            ports = range(1, 1024 + 1)
-
         print('-' * 30)
         print(f"Host: {BLUE}{host}{RESET}")
 
@@ -43,14 +50,12 @@ def scan_ports(ports: Iterable[int] = [], host: str = 'localhost') -> None:
 
         with ThreadPoolExecutor(max_workers=100) as executor:
             results = list(executor.map(check_port, [(host, p) for p in ports]))
-
-        table_data = [r for r in results if r and len(r) == 3]
-    
+        
+        table_data = [r for r in results if r]
         if table_data:
             print(tabulate.tabulate(table_data, headers=["Service", "Port", "State"], tablefmt="rounded_grid"))
         else:
             print("No open ports found.")
-
     except (KeyboardInterrupt, EOFError):
         return
 
@@ -65,28 +70,48 @@ async def async_scan_port(port: int, semaphore: asyncio.Semaphore, host: str = '
             return [f"{PURPLE}{get_service_name(port)}{RESET}", f"{GREEN}{port}{RESET}", f"{BLUE}open{RESET}"]
         except (KeyboardInterrupt, EOFError, OSError):
             return
-    
-async def async_main() -> None:
-    host = 'scanme.nmap.org'
-    ports = range(1, 1025)
-
-    semaphore = asyncio.Semaphore(100)
-
-    print('-' * 30)
-    print(f"Host: {BLUE}{host}{RESET}")
-
+        
+async def run_async_scan(host: str, ports: list[int]) -> None:
     try:
-        socket.gethostbyname(host)
-        print(f'State: up')
-    except socket.gaierror:
-        print(f'State: down (Host not found)')
+        print('-' * 30)
+        print(f"Host: {BLUE}{host}{RESET}")
+
+        try:
+            socket.gethostbyname(host)
+            print('State: up')
+        except socket.gaierror:
+            print('State: down (Host not found)')
+            return
+
+        semaphore = asyncio.Semaphore(100)
+        tasks = [async_scan_port(p, semaphore, host) for p in ports]
+        results = await asyncio.gather(*tasks)
+        
+        table_data = [r for r in results if r]
+        if table_data:
+            print(tabulate.tabulate(table_data, headers=["Service", "Port", "State"], tablefmt="rounded_grid"))
+        else:
+            print("No open ports found.")
+    except (KeyboardInterrupt, EOFError):
         return
+        
+def main() -> None:
+    parser = argparse.ArgumentParser(description="Multi-mode Port Scanner")
+    parser.add_argument("--host", type=str, default="localhost", help="Target host (default: localhost)")
+    parser.add_argument("--ports", type=str, help="Ports to scan (e.g., 80,443 or 20-1024)")
+    parser.add_argument("--mode", choices=['async', 'thread'], default='async', help="Scan mode")
 
-    results = await asyncio.gather(*(async_scan_port(p, semaphore, host) for p in ports))
+    args = parser.parse_args()
 
-    table_data = [r for r in results if r]
-
-    if table_data:
-        print(tabulate.tabulate(table_data, headers=["Service", "Port", "State"], tablefmt="rounded_grid"))
+    if args.ports:
+        ports_list = parse_ports(args.ports)
     else:
-        print("No open ports found.")
+        ports_list = list(range(1, 1025))
+
+    if args.mode == 'async':
+        asyncio.run(run_async_scan(args.host, ports_list))
+    else:
+        run_threaded_scan(args.host, ports_list)
+
+if __name__ == '__main__':
+    main()

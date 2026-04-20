@@ -22,6 +22,7 @@ To use the **Nmap version**, you must have Nmap installed on your system:
 Install the required libraries via pip:
 ```bash
 pip install python-nmap tabulate
+```
 
 📊 Comparison of Methods
 Method	Best For	Technology
