@@ -12,11 +12,17 @@ PURPLE = '\033[35m'
 RESET = '\033[0m'
 BLACK_ON_BLUE = '\033[34m'
 
+def get_service_name(port: int) -> str:
+    try:
+        return socket.getservbyport(port)
+    except OSError:
+        return "unknown"
+
 def check_port(args: tuple[str, int]) -> tuple[int, bool] | list[str]:
     host, port = args
     try:
         with socket.create_connection((host, port), timeout=2):
-            return [f'{PURPLE}{socket.getservbyport(port)}{RESET}', f"{GREEN}{port}{RESET}", f"{BLUE}open{RESET}"]
+            return [f'{PURPLE}{get_service_name(port)}{RESET}', f"{GREEN}{port}{RESET}", f"{BLUE}open{RESET}"]
     except (ConnectionRefusedError, socket.timeout, OSError):
         return port, False
 
@@ -56,7 +62,7 @@ async def async_scan_port(port: int, semaphore: asyncio.Semaphore, host: str = '
             _, writer = await asyncio.wait_for(asyncio.open_connection(host, port), timeout=2)
             writer.close()
             await writer.wait_closed()
-            return [f"{PURPLE}{socket.getservbyport(port)}{RESET}", f"{GREEN}{port}{RESET}", f"{BLUE}open{RESET}"]
+            return [f"{PURPLE}{get_service_name(port)}{RESET}", f"{GREEN}{port}{RESET}", f"{BLUE}open{RESET}"]
         except (KeyboardInterrupt, EOFError, OSError):
             return
     
